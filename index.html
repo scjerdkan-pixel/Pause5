@@ -1,0 +1,1942 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f7f5f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#131313" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Pause">
+<meta name="format-detection" content="telephone=no">
+<title>Pause — Emotional Co-Pilot</title>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+:root {
+color-scheme: light dark;
+--bg:#f7f5f2; --card:#fff; --text:#252525; --muted:#79766f;
+--soft:#f4f3f0; --btn:#eceae5; --line:#e3e1db;
+--calm:#6aa67f; --warm:#d8a13a; --hot:#c4553d;
+--grid:#e8e6e0;
+--r: 22px;
+}
+
+@media (prefers-color-scheme: dark) {
+:root {
+--bg:#131313; --card:#1d1d1d; --text:#f0efec; --muted:#9a968e;
+--soft:#252525; --btn:#323232; --line:#3a3a3a; --grid:#2c2c2c;
+}
+}
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+margin:0;
+min-height:100dvh;
+background:var(--bg);
+color:var(--text);
+font-family:-apple-system, "SF Pro Text", system-ui, sans-serif;
+font-size:16px;
+overscroll-behavior-y:contain;
+}
+
+.app {
+max-width:720px;
+margin-inline:auto;
+padding:
+calc(env(safe-area-inset-top) + 14px)
+calc(env(safe-area-inset-right) + 16px)
+calc(env(safe-area-inset-bottom) + 34px)
+calc(env(safe-area-inset-left) + 16px);
+display:flex;
+flex-direction:column;
+gap:14px;
+}
+
+.card {
+background:var(--card);
+border-radius:var(--r);
+padding:20px;
+box-shadow:0 8px 30px rgb(0 0 0 / .07);
+}
+
+.hidden { display:none !important; }
+
+/* ───── HEADER ───── */
+.bar {
+position:sticky;
+top:calc(env(safe-area-inset-top) + 4px);
+z-index:8;
+display:flex; align-items:center; justify-content:space-between;
+gap:12px;
+padding:12px 16px;
+border-radius:18px;
+background:color-mix(in srgb, var(--card) 82%, transparent);
+-webkit-backdrop-filter:saturate(180%) blur(18px);
+backdrop-filter:saturate(180%) blur(18px);
+border:1px solid var(--line);
+}
+.logo { font-size:18px; font-weight:650; letter-spacing:.2px; }
+
+.mic-pill {
+display:flex; align-items:center; gap:9px;
+width:auto; margin:0; padding:10px 17px 10px 13px;
+border:1px solid var(--line); border-radius:30px;
+background:var(--soft); color:var(--muted);
+font:inherit; font-size:15px; cursor:pointer;
+transition:background .2s, color .2s, border-color .2s;
+}
+.mic-pill:disabled { opacity:.45; }
+.mic-pill .bead {
+width:10px; height:10px; border-radius:50%;
+background:#c4c2bc; flex:none;
+}
+.mic-pill.on { background:var(--text); color:var(--card); border-color:var(--text); }
+.mic-pill.on .bead { background:var(--hot); animation:blink 1.5s ease-in-out infinite; }
+@keyframes blink { 50% { opacity:.25; } }
+
+/* ───── DASHBOARD ───── */
+.dash { display:flex; flex-direction:column; gap:18px; }
+
+.top {
+display:grid;
+grid-template-columns:auto 1fr;
+gap:20px;
+align-items:center;
+}
+@media (max-width:520px) {
+.top { grid-template-columns:1fr; justify-items:center; text-align:center; }
+}
+
+/* วงแหวนเสียง */
+.ring {
+--v:0;
+position:relative;
+width:168px; height:168px;
+display:grid; place-items:center;
+flex:none;
+}
+.ring .plate {
+position:absolute; inset:0;
+border-radius:50%;
+background:var(--soft);
+}
+.ring .halo {
+position:absolute; inset:0;
+border-radius:50%;
+border:3px solid var(--calm);
+opacity:.55;
+transform:scale(calc(1 + var(--v) * .26));
+transition:transform .08s linear, border-color .25s;
+}
+.ring .core { position:relative; text-align:center; }
+.ring .num { font-size:38px; font-weight:650; font-variant-numeric:tabular-nums; line-height:1; }
+.ring .cap { font-size:12px; color:var(--muted); margin-top:6px; }
+
+/* มิเตอร์ */
+.gauge { min-width:0; width:100%; }
+.gauge .score {
+display:flex; align-items:baseline; gap:10px; margin-bottom:4px;
+}
+.gauge .big { font-size:44px; font-weight:650; font-variant-numeric:tabular-nums; line-height:1; }
+.gauge .of { font-size:14px; color:var(--muted); }
+.gauge .state { font-size:16px; color:var(--muted); margin-bottom:12px; }
+
+.meter { height:11px; background:var(--btn); border-radius:20px; overflow:hidden; position:relative; }
+.meter .fill {
+height:100%; width:0%; border-radius:20px;
+background:var(--calm);
+transition:width .3s ease, background .3s ease;
+}
+.meter .mark {
+position:absolute; top:-3px; bottom:-3px; width:2px;
+background:var(--muted); opacity:.5; border-radius:2px;
+transition:left .25s;
+}
+.meter-legend {
+display:flex; justify-content:space-between;
+font-size:12px; color:var(--muted); margin-top:7px;
+}
+
+/* ───── GRAPH ───── */
+.graph-head {
+display:flex; justify-content:space-between; align-items:center;
+margin-bottom:10px; font-size:13px; color:var(--muted);
+}
+.keys { display:flex; gap:14px; }
+.key { display:flex; align-items:center; gap:6px; }
+.key i { width:14px; height:3px; border-radius:2px; display:inline-block; }
+.k-score { background:var(--hot); }
+.k-voice { background:var(--calm); }
+
+.graph-wrap {
+position:relative;
+width:100%; height:190px;
+border-radius:16px;
+background:var(--soft);
+overflow:hidden;
+}
+canvas { display:block; width:100%; height:100%; }
+
+/* ───── CHIPS ───── */
+.chips { display:flex; flex-wrap:wrap; gap:8px; min-height:30px; }
+.chip {
+font-size:13px; padding:6px 12px; border-radius:20px;
+background:var(--soft); border:1px solid var(--line); color:var(--muted);
+transition:background .2s, color .2s;
+}
+.chip.on { background:var(--text); color:var(--card); border-color:var(--text); }
+
+/* ───── FORM ───── */
+h1 { font-size:25px; line-height:1.45; margin:0 0 8px; font-weight:650; }
+h2 { font-size:20px; margin:0; font-weight:650; }
+p { color:var(--muted); line-height:1.65; margin:0 0 16px; }
+.lead { font-size:15px; margin:0 0 12px; }
+
+textarea {
+width:100%; min-height:132px; padding:16px;
+border:1px solid var(--line); border-radius:18px;
+background:var(--soft); color:var(--text);
+font:inherit; font-size:17px; line-height:1.65;
+resize:none; outline:none; appearance:none;
+transition:border-color .2s;
+}
+textarea:focus { border-color:var(--muted); }
+
+button {
+width:100%; padding:16px; margin-top:12px;
+border:none; border-radius:15px;
+background:var(--btn); color:var(--text);
+font:inherit; font-size:17px; cursor:pointer; appearance:none;
+transition:opacity .15s;
+}
+button:active { opacity:.7; }
+button.primary { background:var(--text); color:var(--card); }
+button.danger { background:var(--hot); color:#fff; }
+button.ghost { background:none; color:var(--muted); font-size:15px; }
+
+.row { display:flex; gap:10px; }
+.row > button { flex:1; }
+
+/* ───── SETTINGS ───── */
+.shead { display:flex; align-items:center; gap:8px; margin-bottom:18px; }
+.back { width:auto; margin:0; padding:6px 14px; background:none; font-size:30px; line-height:1; }
+
+.section { background:var(--soft); border-radius:18px; padding:16px; margin-top:14px; }
+.stitle { font-weight:650; margin-bottom:10px; }
+fieldset { border:0; margin:0; padding:0; min-width:0; }
+legend { padding:0; }
+
+.opt {
+display:flex; align-items:center; justify-content:space-between; gap:14px;
+padding:14px 0; border-bottom:1px solid var(--line);
+}
+.opt:last-of-type { border-bottom:none; }
+.opt .lbl { flex:1; min-width:0; }
+.opt .val { color:var(--muted); font-variant-numeric:tabular-nums; }
+
+.radio { display:flex; align-items:flex-start; gap:12px; padding:12px 0; cursor:pointer; line-height:1.5; }
+.radio input { width:20px; height:20px; margin:2px 0 0; flex:none; accent-color:var(--text); }
+
+.switch { position:relative; width:52px; height:31px; flex:none; }
+.switch input { position:absolute; inset:0; width:100%; height:100%; opacity:0; margin:0; z-index:2; }
+.switch input:disabled { cursor:not-allowed; }
+.slider { position:absolute; inset:0; background:#c9c7c1; border-radius:30px; transition:background .2s; }
+.slider::before {
+content:""; position:absolute; width:25px; height:25px; left:3px; top:3px;
+background:#fff; border-radius:50%;
+transition:transform .22s cubic-bezier(.3,1.4,.5,1);
+box-shadow:0 1px 3px rgb(0 0 0 / .2);
+}
+.switch input:checked + .slider { background:var(--text); }
+.switch input:checked + .slider::before { transform:translateX(21px); }
+.switch:has(input:disabled) { opacity:.4; }
+
+.note { font-size:13.5px; color:var(--muted); line-height:1.65; margin-top:6px; }
+
+.banner {
+background:#fdf0ec; color:#8a3b28; border:1px solid #f0cdc2;
+border-radius:16px; padding:14px 16px; font-size:14px; line-height:1.6;
+}
+@media (prefers-color-scheme: dark) {
+.banner { background:#2e1d18; color:#e5a591; border-color:#4a2e26; }
+}
+
+/* ───── BREATH ───── */
+.breath {
+width:168px; height:168px; margin:28px auto; border-radius:50%;
+background:var(--btn); display:grid; place-items:center;
+font-size:36px; font-variant-numeric:tabular-nums;
+animation:breathe 8s ease-in-out infinite;
+}
+@keyframes breathe {
+0%,100% { transform:scale(1); opacity:.6; }
+50% { transform:scale(1.22); opacity:1; }
+}
+.bhint { text-align:center; font-size:15px; color:var(--muted); min-height:24px; }
+
+.quote {
+background:var(--soft); border-radius:15px; padding:15px 17px;
+font-size:15px; color:var(--muted); line-height:1.65;
+max-height:170px; overflow-y:auto;
+white-space:pre-wrap; overflow-wrap:anywhere;
+-webkit-overflow-scrolling:touch;
+}
+
+.sbstat { font-size:20px; font-weight:650; margin:14px 0 10px; }
+.sbstat.unusual { color:var(--hot); }
+.sbgrid { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-bottom:10px; }
+.sbgrid > div { background:var(--soft); border-radius:15px; padding:12px 8px; text-align:center; }
+.sbgrid .cap { font-size:12px; color:var(--muted); }
+.sbgrid .num { font-size:28px; font-weight:650; font-variant-numeric:tabular-nums; line-height:1.3; }
+.rtxt { flex:1; min-width:0; }
+.radio .th { display:flex; align-items:center; gap:6px; color:var(--muted); font-size:14px; white-space:nowrap; }
+.radio .th input {
+width:70px; height:auto; margin:0; padding:8px 6px; text-align:center;
+border:1px solid var(--line); border-radius:10px;
+background:var(--card); color:var(--text);
+font:inherit; font-size:16px; appearance:textfield; -moz-appearance:textfield;
+}
+.heard div { margin:0 0 6px; }
+.heard .interim { opacity:.55; }
+button:disabled { opacity:.45; cursor:not-allowed; }
+
+.toast {
+position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 28px);
+translate:-50% 18px;
+max-width:min(86vw, 420px);
+padding:14px 22px; border-radius:15px;
+background:var(--text); color:var(--card);
+font-size:16px; text-align:center;
+opacity:0; pointer-events:none; z-index:30;
+transition:opacity .25s, translate .25s;
+}
+.toast.show { opacity:1; translate:-50% 0; }
+
+.stat { text-align:center; font-size:13.5px; color:var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+*, *::before { animation:none !important; transition:none !important; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<!-- ══════ HEADER ══════ -->
+<div class="bar">
+<span class="logo">Pause</span>
+<button class="mic-pill" id="micPill" type="button">
+<span class="bead"></span><span id="micPillText">ไมค์ปิด</span>
+</button>
+</div>
+
+<!-- ══════ MAIN DASHBOARD ══════ -->
+<div class="card" id="homeScreen">
+<div class="dash">
+
+<div class="banner hidden" id="httpsWarn">
+หน้านี้ไม่ได้เปิดผ่าน https ทำให้ Safari ไม่ยอมให้ใช้ไมโครโฟน
+ส่วนวิเคราะห์ข้อความยังทำงานได้ตามปกติ
+</div>
+
+<div class="top">
+<div class="ring" id="ring">
+<div class="plate"></div>
+<div class="halo" id="halo"></div>
+<div class="core">
+<div class="num" id="vuNum">--</div>
+<div class="cap" id="vuCap">ไมค์ปิด</div>
+</div>
+</div>
+
+<div class="gauge">
+<div class="score">
+<span class="big" id="scoreNum">0</span>
+<span class="of">/ 100</span>
+</div>
+<div class="state" id="stateText">ใจเย็นดี</div>
+
+<div class="meter">
+<div class="fill" id="meterFill"></div>
+<div class="mark" id="meterMark"></div>
+</div>
+<div class="meter-legend">
+<span>ระดับความรู้สึก</span>
+<span id="limitText">เตือนที่ --</span>
+</div>
+</div>
+</div>
+
+<div>
+<div class="graph-head">
+<span>ย้อนหลัง 60 วินาที</span>
+<span class="keys">
+<span class="key"><i class="k-score"></i>คะแนนรวม</span>
+<span class="key"><i class="k-voice"></i>ระดับเสียง</span>
+</span>
+</div>
+<div class="graph-wrap">
+<canvas id="graph"></canvas>
+</div>
+</div>
+
+<div class="chips" id="chips"></div>
+
+<!-- คำพูดที่ถอดเป็นข้อความ -->
+<div id="sttBox">
+<div class="graph-head">
+<span>Pause ได้ยินว่า</span>
+<span id="sttState">ปิดอยู่</span>
+</div>
+<div class="quote heard" id="sttText"></div>
+<div class="row">
+<button id="btnStt" type="button">เปิดถอดเสียงเป็นข้อความ</button>
+<button class="ghost" id="btnSttClear" type="button">ล้างข้อความ</button>
+</div>
+<div class="note" id="sttNote">ใช้บริการรู้จำเสียงของ Safari/Apple เสียงอาจถูกส่งออกจากเครื่องไปแปลงเป็นข้อความ ต้องเปิด Dictation ไว้ที่ ตั้งค่า › ทั่วไป › แป้นพิมพ์</div>
+</div>
+
+<div>
+<textarea id="draft" placeholder="พิมพ์ข้อความที่อยากส่ง…" aria-label="ข้อความร่าง"></textarea>
+<div class="row">
+<button class="primary" id="btnSend" type="button">ส่ง</button>
+<button id="btnClear" type="button">ล้าง</button>
+</div>
+</div>
+
+<div>
+<button class="primary" id="micBig" type="button">เปิดไมโครโฟน</button>
+<button id="btnCal" class="hidden" type="button">วัดเสียงรอบข้างใหม่</button>
+<button id="btnSb" type="button">เสียงเทียบกับปกติ</button>
+<button id="btnSettings" type="button">Settings</button>
+<div class="stat" id="statLine"></div>
+<div class="stat" id="sbLine"></div>
+</div>
+
+</div>
+</div>
+
+<!-- ══════ PROMPT ══════ -->
+<div class="card hidden" id="promptScreen">
+<h1 id="promptTitle">เสียงเริ่มดังขึ้นนะ อยากพักก่อนไหม?</h1>
+<p class="lead" id="promptWhy"></p>
+<div class="quote" id="promptQuote"></div>
+<button class="primary" id="btnPause" type="button">พักก่อน</button>
+<button id="btnGoOn" type="button">ไปต่อเลย</button>
+<button class="ghost" id="btnSnooze" type="button">ไม่ต้องเตือนอีก 5 นาที</button>
+</div>
+
+<!-- ══════ BREATH ══════ -->
+<div class="card hidden" id="breathScreen">
+<h1>ไม่ต้องรีบก็ได้</h1>
+<p>อยู่ตรงนี้สักครู่ก่อนนะ</p>
+<div class="breath" id="countdown">30</div>
+<div class="bhint" id="breathHint">หายใจเข้า…</div>
+<button class="primary" id="btnReady" type="button">พร้อมแล้ว</button>
+<button id="btnBack1" type="button">กลับไป</button>
+</div>
+
+<!-- ══════ REFLECT ══════ -->
+<div class="card hidden" id="reflectScreen">
+<h1>ยังอยากพูดแบบเดิมอยู่ไหม?</h1>
+<p>ไม่มีคำตอบไหนผิด แค่อยากให้ทบทวนอีกครั้ง</p>
+<div class="quote" id="reflectQuote"></div>
+<button class="primary" data-reflect="edit" type="button">ขอเรียบเรียงใหม่</button>
+<button data-reflect="same" type="button">เอาแบบเดิม</button>
+<button data-reflect="discard" type="button">ไม่พูดแล้ว</button>
+</div>
+
+<!-- ══════ SOUND BASELINE ══════ -->
+<div class="card hidden" id="sbScreen">
+<div class="shead">
+<button class="back" id="btnBack3" type="button" aria-label="กลับ">&lsaquo;</button>
+<h2>เสียงเทียบกับปกติ</h2>
+</div>
+<p class="lead">เทียบระดับเสียงตอนนี้กับระดับ “ปกติ” ที่เรียนรู้จากช่วงที่ผ่านมา เป็นเพียงการตรวจว่าเสียงผิดไปจากรูปแบบปกติหรือไม่ ไม่ได้บอกว่าเกิดอะไรขึ้น ใครเป็นต้นเสียง หรือใครรู้สึกอย่างไร</p>
+
+<div class="section">
+<div class="opt">
+<div class="lbl">
+<strong>โหมดพื้นฐานเสียง</strong>
+<div class="note">เรียนรู้เสียงปกติขณะเปิดไมโครโฟน เก็บเป็นตัวเลขเท่านั้น ไม่เก็บเสียง</div>
+</div>
+<label class="switch">
+<input type="checkbox" role="switch" id="sbSwitch" aria-label="โหมดพื้นฐานเสียง" checked>
+<span class="slider"></span>
+</label>
+</div>
+</div>
+
+<div class="sbstat" id="sbStatus">--</div>
+<div class="sbgrid">
+<div><div class="cap">ตอนนี้</div><div class="num" id="sbCur">--</div></div>
+<div><div class="cap">ปกติ</div><div class="num" id="sbBase">--</div></div>
+<div><div class="cap">ต่างจากปกติ (dB)</div><div class="num" id="sbDev">--</div></div>
+</div>
+<div class="note" id="sbSens"></div>
+
+<div class="graph-head" style="margin-top:16px">
+<span>ย้อนหลัง 5 นาที</span>
+<span class="keys">
+<span class="key"><i class="k-voice"></i>ตอนนี้</span>
+<span class="key"><i style="background:var(--muted)"></i>ปกติ</span>
+</span>
+</div>
+<div class="graph-wrap"><canvas id="sbGraph"></canvas></div>
+
+<div class="stitle" style="margin-top:18px">เสียงผิดจากปกติล่าสุด</div>
+<div class="quote heard" id="sbEvents"></div>
+<button id="btnSbReset" type="button">ล้างและเรียนรู้เสียงปกติใหม่</button>
+<div class="note">ตัวเลขเป็นเดซิเบลสัมพัทธ์ (1 หน่วย ≈ 1 dB) ใช้เทียบกันเองในเครื่องนี้ ไม่ใช่ค่าความดังจริงจากเครื่องวัดมาตรฐาน ถ้าย้ายไปอยู่ที่ใหม่ ให้กด “ล้างและเรียนรู้ใหม่” ปรับความอ่อนไหวได้ที่ Settings</div>
+</div>
+
+<!-- ══════ SETTINGS ══════ -->
+<div class="card hidden" id="settingsScreen">
+<div class="shead">
+<button class="back" id="btnBack2" type="button" aria-label="กลับ">&lsaquo;</button>
+<h2>Pause Settings</h2>
+</div>
+
+<div class="section">
+<div class="opt">
+<div class="lbl">
+<strong>Pause</strong>
+<div class="note">เปิดหรือปิดการเตือนทั้งหมด</div>
+</div>
+<label class="switch">
+<input type="checkbox" role="switch" id="pauseSwitch" aria-label="เปิดหรือปิดการเตือนทั้งหมด" checked>
+<span class="slider"></span>
+</label>
+</div>
+
+<div class="opt">
+<div class="lbl">
+<strong>ไมโครโฟน</strong>
+<div class="note" id="micNote">ปิดอยู่</div>
+</div>
+<label class="switch">
+<input type="checkbox" role="switch" id="micSwitch" aria-label="ไมโครโฟน">
+<span class="slider"></span>
+</label>
+</div>
+
+<div class="opt">
+<div class="lbl">
+<strong>ไม่ให้จอดับ</strong>
+<div class="note">ขณะเปิดไมโครโฟน</div>
+</div>
+<label class="switch">
+<input type="checkbox" role="switch" id="wakeSwitch" aria-label="ไม่ให้จอดับขณะเปิดไมโครโฟน" checked>
+<span class="slider"></span>
+</label>
+</div>
+</div>
+
+<div class="section">
+<fieldset>
+<legend class="stitle">เมื่อไหร่ควรเตือน?</legend>
+<label class="radio"><input type="radio" name="trigger" value="typing"><span>ตอนพิมพ์</span></label>
+<label class="radio"><input type="radio" name="trigger" value="voice"><span>ตอนพูด</span></label>
+<label class="radio"><input type="radio" name="trigger" value="both" checked><span>ทั้งสอง</span></label>
+</fieldset>
+</div>
+
+<div class="section">
+<div class="stitle">ไมโครโฟน</div>
+<div class="opt">
+<div class="lbl">
+<strong>เสียงรอบข้างที่วัดได้</strong>
+<div class="note">ค่าพื้นฐานที่ใช้เปรียบเทียบ</div>
+</div>
+<span class="val" id="baseVal">--</span>
+</div>
+<div class="opt">
+<div class="lbl">
+<strong>ระดับสูงสุดใน 60 วินาที</strong>
+<div class="note">คะแนนที่พุ่งสูงที่สุด</div>
+</div>
+<span class="val" id="peakVal">--</span>
+</div>
+<button id="btnCal2" type="button">วัดเสียงรอบข้างใหม่ (5 วินาที)</button>
+<div class="note">ทำตอนอยู่เงียบ ๆ ครั้งเดียวก็พอ ถ้าย้ายสถานที่แล้วเตือนบ่อยผิดปกติ ให้วัดใหม่</div>
+</div>
+
+<div class="section">
+<fieldset>
+<legend class="stitle">ความอ่อนไหว</legend>
+<label class="radio"><input type="radio" name="sensitivity" value="low"><span class="rtxt">ต่ำ — เตือนเมื่อแรงมากเท่านั้น</span><span class="th">เตือนที่ <input type="number" id="thLow" inputmode="numeric" min="10" max="100" step="1" aria-label="ค่าเตือนระดับต่ำ"></span></label>
+<label class="radio"><input type="radio" name="sensitivity" value="medium" checked><span class="rtxt">ปานกลาง</span><span class="th">เตือนที่ <input type="number" id="thMedium" inputmode="numeric" min="10" max="100" step="1" aria-label="ค่าเตือนระดับปานกลาง"></span></label>
+<label class="radio"><input type="radio" name="sensitivity" value="high"><span class="rtxt">สูง — เตือนไวที่สุด</span><span class="th">เตือนที่ <input type="number" id="thHigh" inputmode="numeric" min="10" max="100" step="1" aria-label="ค่าเตือนระดับสูง"></span></label>
+</fieldset>
+<div class="note">ตัวเลขคือคะแนน (10–100) ที่ทำให้ Pause เตือน ยิ่งน้อยยิ่งเตือนไว ต้องเรียงจาก ต่ำ &gt; ปานกลาง &gt; สูง แก้แล้วบันทึกอัตโนมัติ</div>
+<button id="btnThReset" type="button">คืนค่าเริ่มต้นของเกณฑ์เตือน</button>
+</div>
+
+<div class="section">
+<fieldset>
+<legend class="stitle">ภาษาที่ใช้ถอดเสียง</legend>
+<label class="radio"><input type="radio" name="sttlang" value="th-TH" checked><span>ไทย</span></label>
+<label class="radio"><input type="radio" name="sttlang" value="en-US"><span>English</span></label>
+</fieldset>
+<div class="note">Safari ถอดเสียงได้ทีละภาษา ถ้าพูดสลับไทย–อังกฤษ คำที่ไม่ใช่ภาษาที่เลือกอาจผิดเพี้ยน</div>
+</div>
+
+<div class="section">
+<div class="stitle">Pause กำลังดูอะไร?</div>
+<div class="opt">คำที่สื่ออารมณ์ <span class="val">&#10003;</span></div>
+<div class="opt">ความเร็วการพิมพ์ <span class="val">&#10003;</span></div>
+<div class="opt">การลบซ้ำ ๆ <span class="val">&#10003;</span></div>
+<div class="opt">ระดับความดังของเสียง <span class="val" id="flag1">&#10007;</span></div>
+<div class="opt">ความดังที่ต่อเนื่อง <span class="val" id="flag2">&#10007;</span></div>
+<div class="opt">เสียงเทียบกับระดับปกติที่เรียนรู้ <span class="val" id="flag4">&#10007;</span></div>
+<div class="opt">คำพูดที่ถอดเป็นข้อความ <span class="val" id="flag3">&#10007;</span></div>
+<div class="opt">การบันทึกเสียง <span class="val">&#10007;</span></div>
+<div class="opt">กล้อง <span class="val">&#10007;</span></div>
+<div class="opt">ตำแหน่ง <span class="val">&#10007;</span></div>
+</div>
+
+<div class="section">
+<div class="stitle">สถิติของคุณ</div>
+<div class="opt">เลือกพักก่อน <span class="val" id="sPause">0</span></div>
+<div class="opt">ไปต่อทันที <span class="val" id="sReply">0</span></div>
+<div class="opt">กลับไปเรียบเรียงใหม่ <span class="val" id="sEdit">0</span></div>
+<div class="opt">ตัดสินใจไม่พูด <span class="val" id="sDiscard">0</span></div>
+<button id="btnReset" type="button">ล้างสถิติ</button>
+</div>
+
+<p class="note">
+การวัดระดับความดังเกิดขึ้นบน iPad ของคุณเท่านั้น เสียงถูกอ่านเป็นตัวเลขแบบสด ๆ แล้วทิ้งทุกเฟรม ไม่มีการบันทึกเสียง
+และโค้ดของแอปนี้ไม่ส่งข้อมูลออกเครือข่าย ยกเว้นเมื่อคุณเปิด “ถอดเสียงเป็นข้อความ” ซึ่ง Safari จะส่งเสียงไปให้บริการรู้จำเสียงของ Apple
+แปลงเป็นข้อความ (แอปไม่เก็บเสียง ข้อความที่ได้ยินอยู่ในหน่วยความจำจนกว่าจะกดล้างหรือปิดหน้านี้ ไม่ถูกบันทึกลงเครื่อง)
+โหมดพื้นฐานเสียงเก็บเฉพาะตัวเลขระดับเสียงปกติไว้ในเครื่องนี้ ไม่เก็บเสียง
+คะแนนเป็นการประมาณจากสัญญาณผิวเผิน ไม่ใช่การวินิจฉัยอารมณ์จริง และไม่ใช่เครื่องมือทางการแพทย์
+</p>
+</div>
+
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="module">
+/* Pause — iPad 6 / iPadOS 17.7 build (revised) */
+
+const $ = (id) => document.getElementById(id);
+
+/* ───── ค่าคงที่ ───── */
+const LEXICON = {
+3: ['เกลียด','ทนไม่ไหว','ไม่ไหวแล้ว','พอกันที','หยุดพูด','เลิกยุ่ง','อย่ามายุ่ง',
+'ไม่อยากเห็นหน้า','จบกัน','สมน้ำหน้า','แย่ที่สุด','hate','shut up'],
+2: ['โกรธ','โมโห','โกหก','หลอก','ไร้สาระ','งี่เง่า','ห่วยแตก','แย่มาก','ไม่แฟร์',
+'ไม่ยุติธรรม','ผิดหวังมาก','เห็นแก่ตัว','ไม่เคยฟัง','ทุกที','ตลอดเวลา','ไม่เคย',
+'angry','liar','selfish','unfair','always','never'],
+1: ['รำคาญ','หงุดหงิด','เบื่อ','เซ็ง','ผิดหวัง','โคตร','บ้าบอ','บ้าไปแล้ว','ทำไมถึง','พอแล้ว',
+'อีกแล้ว','annoyed','whatever']
+};
+
+/* คำยาวก่อน เพื่อให้ "ผิดหวังมาก" ถูกจับก่อน "ผิดหวัง" แล้วตัดออกกันนับซ้อน */
+const TERMS = Object.entries(LEXICON)
+.flatMap(([w, list]) => list.map(t => [t, +w]))
+.sort((a, b) => b[0].length - a[0].length);
+
+/* คำปฏิเสธนำหน้าอารมณ์ เช่น "ไม่โกรธ" */
+const NEGATED = /(?:ไม่ได้|ไม่|เปล่า|not\s+)\s*(?:โกรธ|โมโห|เกลียด|รำคาญ|หงุดหงิด|angry|annoyed|hate)/g;
+
+const W = { words:40, caps:8, punct:10, stretch:6, speed:12, erase:8,
+loud:24, sustain:20, burst:14, speech:40 };
+const TEXT_MAX = W.words + W.caps + W.punct + W.stretch + W.speed + W.erase;
+const VOICE_MAX = W.loud + W.sustain + W.burst;
+
+/* เกณฑ์เตือนของทั้ง 3 ระดับ ผู้ใช้แก้ได้ใน Settings และบันทึกไว้ (ค่าเริ่มต้นอยู่ที่นี่ที่เดียว) */
+const DEFAULT_THRESHOLD = { low:70, medium:55, high:30 };
+const THRESHOLD = { ...DEFAULT_THRESHOLD };
+const TH_MIN = 10, TH_MAX = 100;
+const DURATION = { low:15, medium:30, high:45 };
+
+const K = { set:'pause.settings', stat:'pause.stats', base:'pause.baseline', sb:'pause.soundbaseline' };
+
+const GRAPH_MS = 60_000;
+const SAMPLE_MS = 250;
+
+/* ───── สถานะ ───── */
+let armed = true;
+let snoozeUntil = 0;
+let current = { score:0, signals:[] };
+const typing = { stamps:[], erases:[], lastLen:0 };
+const series = [];
+
+const mic = {
+on:false, busy:false, ctx:null, analyser:null, stream:null, data:null,
+raf:0, rms:0, rel:0, baseline:0.012,
+history:[], bursts:[], calibrating:false
+};
+
+/* ───── ถอดเสียง (Web Speech API ของ Safari) ───── */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const STT_WINDOW = 30_000; // คำพูดที่นับคะแนน: ย้อนหลัง 30 วินาที
+const stt = { on:false, want:false, rec:null, finals:[], interim:'',
+ignoreBefore:0, restarts:[], suspended:false };
+
+/* ───── เก็บค่า ───── */
+const save = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+const read = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+
+/* ───── toast ───── */
+let toastT;
+function toast(msg) {
+const el = $('toast');
+el.textContent = msg;
+el.classList.add('show');
+clearTimeout(toastT);
+toastT = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+/* ══════════════════════════════════════════════════
+ไมโครโฟน
+══════════════════════════════════════════════════ */
+const secure = () => window.isSecureContext || location.hostname === 'localhost';
+const supported = () => !!navigator.mediaDevices?.getUserMedia && !!window.AudioContext;
+const ready = () => secure() && supported();
+
+async function toggleMic() {
+if (mic.busy) return;
+if (mic.on) { stopMic(); toast('ปิดไมโครโฟนแล้ว'); }
+else await startMic();
+}
+
+function releaseCapture() {
+mic.stream?.getTracks().forEach(t => t.stop());
+if (mic.ctx && mic.ctx.state !== 'closed') mic.ctx.close().catch(() => {});
+mic.stream = null; mic.ctx = null; mic.analyser = null;
+}
+
+async function startMic() {
+if (mic.busy || mic.on) return;
+if (!secure()) { toast('ต้องเปิดหน้านี้ผ่าน https เท่านั้น'); syncMicUI(); return; }
+if (!supported()) { toast('Safari รุ่นนี้ใช้ไมโครโฟนไม่ได้'); syncMicUI(); return; }
+
+mic.busy = true;
+$('micPillText').textContent = 'กำลังขอสิทธิ์…';
+
+try {
+/* สร้าง context และเริ่ม resume ตอนยังอยู่ใน user gesture (ก่อน await ใด ๆ) */
+mic.ctx = new AudioContext();
+if (mic.ctx.state === 'suspended') mic.ctx.resume().catch(() => {});
+
+mic.stream = await navigator.mediaDevices.getUserMedia({
+audio: {
+echoCancellation: false,
+noiseSuppression: false,
+autoGainControl: false // ปิด ไม่งั้น iOS จะปรับเสียงให้ดังเท่ากันหมด
+}
+});
+
+if (mic.ctx.state === 'suspended') {
+await Promise.race([
+mic.ctx.resume().catch(() => {}),
+new Promise(r => setTimeout(r, 1500)) // กัน resume ค้างจน busy ไม่หลุด
+]);
+}
+
+const src = mic.ctx.createMediaStreamSource(mic.stream);
+mic.analyser = mic.ctx.createAnalyser();
+mic.analyser.fftSize = 1024;
+src.connect(mic.analyser);
+mic.data = new Float32Array(mic.analyser.fftSize);
+
+mic.on = true;
+mic.busy = false;
+mic.history.length = 0;
+mic.bursts.length = 0;
+wakeWarned = false;
+
+syncMicUI();
+loopMic();
+requestWakeLock();
+
+if (read(K.base) === null) { toast('เปิดไมค์แล้ว — กำลังวัดเสียงรอบข้าง'); calibrate(); }
+else toast('เปิดไมโครโฟนแล้ว');
+
+} catch (err) {
+releaseCapture(); // ไม่ปล่อยให้ไมค์ค้างเปิดเมื่อเริ่มไม่สำเร็จ
+mic.busy = false;
+mic.on = false;
+syncMicUI();
+const n = err?.name;
+if (n === 'NotAllowedError') toast('ยังไม่ได้อนุญาต — ตั้งค่า › Safari › ไมโครโฟน');
+else if (n === 'NotFoundError') toast('ไม่พบไมโครโฟนในเครื่อง');
+else if (n === 'NotReadableError') toast('ไมค์ถูกแอปอื่นใช้อยู่');
+else toast('เปิดไมโครโฟนไม่สำเร็จ');
+}
+}
+
+function stopMic() {
+mic.on = false; mic.busy = false;
+mic.rel = 0; mic.rms = 0;
+mic.history.length = 0; mic.bursts.length = 0;
+mic.calibrating = false;
+clearInterval(calTimer);
+cancelAnimationFrame(mic.raf);
+
+releaseCapture();
+releaseWakeLock();
+syncMicUI();
+render();
+}
+
+function loopMic() {
+if (!mic.on) return;
+
+mic.analyser.getFloatTimeDomainData(mic.data);
+
+let sum = 0;
+for (let i = 0; i < mic.data.length; i++) sum += mic.data[i] * mic.data[i];
+const raw = Math.sqrt(sum / mic.data.length);
+
+/* ขึ้นไว ลงช้า ให้ใกล้เคียงการรับรู้ของคน */
+mic.rms = raw > mic.rms ? mic.rms * 0.55 + raw * 0.45
+: mic.rms * 0.88 + raw * 0.12;
+
+if (!mic.calibrating) {
+const excess = Math.max(0, mic.rms - mic.baseline);
+const span = Math.max(0.05, mic.baseline * 7);
+mic.rel = Math.min(1, excess / span);
+
+const now = performance.now();
+mic.history.push({ t:now, v:mic.rel });
+while (mic.history.length && now - mic.history[0].t > 10_000) mic.history.shift();
+
+if (mic.rel > 0.6) {
+const last = mic.bursts.at(-1);
+if (!last || now - last > 700) mic.bursts.push(now);
+}
+while (mic.bursts.length && now - mic.bursts[0] > 10_000) mic.bursts.shift();
+}
+
+drawRing();
+mic.raf = requestAnimationFrame(loopMic);
+}
+
+const hue = (v) => v < 0.35 ? 'var(--calm)' : v < 0.65 ? 'var(--warm)' : 'var(--hot)';
+
+function drawRing() {
+$('ring').style.setProperty('--v', mic.rel.toFixed(3));
+$('halo').style.borderColor = hue(mic.rel);
+$('vuNum').textContent = mic.calibrating ? '…' : Math.round(mic.rel * 100);
+}
+
+function syncMicUI() {
+const on = mic.on;
+
+$('micPill').className = on ? 'mic-pill on' : 'mic-pill';
+$('micPillText').textContent = on ? 'ไมค์เปิด' : 'ไมค์ปิด';
+
+$('micBig').textContent = on ? 'ปิดไมโครโฟน' : 'เปิดไมโครโฟน';
+$('micBig').className = on ? 'danger' : 'primary';
+
+$('btnCal').classList.toggle('hidden', !on);
+$('micSwitch').checked = on;
+$('micNote').textContent = on ? 'กำลังฟังอยู่ — วัดแค่ความดัง' : 'ปิดอยู่';
+$('flag1').innerHTML = on ? '&#10003;' : '&#10007;';
+$('flag2').innerHTML = on ? '&#10003;' : '&#10007;';
+$('vuCap').textContent = on ? 'ระดับเสียง' : 'ไมค์ปิด';
+
+if (!on) {
+$('vuNum').textContent = '--';
+$('ring').style.setProperty('--v', 0);
+$('halo').style.borderColor = 'var(--calm)';
+}
+}
+
+/* ───── calibrate ───── */
+let calTimer = null;
+function calibrate() {
+if (!mic.on) { toast('เปิดไมโครโฟนก่อนนะ'); return; }
+
+mic.calibrating = true;
+$('vuCap').textContent = 'อย่าเพิ่งพูด…';
+
+const samples = [];
+let ticks = 50; // 50 × 100ms = 5 วินาที
+clearInterval(calTimer);
+
+calTimer = setInterval(() => {
+samples.push(mic.rms);
+if (--ticks > 0) return;
+
+clearInterval(calTimer);
+samples.sort((a, b) => a - b);
+mic.baseline = Math.max(0.002, samples[samples.length >> 1] ?? 0.012);
+mic.calibrating = false;
+save(K.base, String(mic.baseline));
+$('vuCap').textContent = 'ระดับเสียง';
+$('baseVal').textContent = (mic.baseline * 1000).toFixed(1);
+toast('วัดเสียงรอบข้างเรียบร้อย');
+}, 100);
+}
+
+/* ───── Wake Lock (Safari 16.4+) ───── */
+let wakeLock = null;
+let wakeWarned = false;
+async function requestWakeLock() {
+if (wakeLock || !$('wakeSwitch').checked) return;
+if (!('wakeLock' in navigator)) { warnWake(); return; }
+try {
+const lock = await navigator.wakeLock.request('screen');
+if (wakeLock) { lock.release().catch(() => {}); return; } // กันซ้อนกรณีเรียกพร้อมกัน
+wakeLock = lock;
+lock.addEventListener('release', () => { if (wakeLock === lock) wakeLock = null; });
+} catch { warnWake(); }
+}
+function warnWake() {
+if (wakeWarned) return;
+wakeWarned = true;
+toast('เครื่องนี้ไม่ยอมให้จอค้างไว้ — จออาจดับเอง');
+}
+function releaseWakeLock() { wakeLock?.release().catch(() => {}); wakeLock = null; }
+
+/* ══════════════════════════════════════════════════
+วิเคราะห์
+══════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════
+Sound Baseline
+เสียงตอนนี้ → ระดับปกติ → ส่วนต่าง → ความอ่อนไหว → เสียงผิดจากปกติ
+ใช้ mic.rms เดิม (ไม่เปิดไมค์เพิ่ม ไม่เก็บเสียง เก็บเฉพาะตัวเลข)
+แยกจากคะแนนอารมณ์ ไม่กระทบคะแนนและไม่เรียกหน้าเตือน
+══════════════════════════════════════════════════ */
+/* SB-CORE-START */
+/* ต้องต่างจากปกติอย่างน้อยกี่ dB ถึงนับว่า "ผิดจากปกติ" ตามความอ่อนไหวเดิม (ต่ำ/กลาง/สูง) */
+const SB_DEV = { low:15, medium:10, high:6 };
+const SB_DOWN_FACTOR = 1.5;  // ฝั่งเงียบกว่าปกติ ต้องต่างมากกว่าฝั่งดังกว่าปกติ 1.5 เท่า
+const SB_MIN_AMBIENT = 30;   // ตรวจ "เงียบผิดปกติ" เมื่อเสียงปกติไม่ได้เงียบสนิทอยู่แล้ว
+const SB_WINDOW = 600;       // เก็บค่าย้อนหลัง 600 ค่า (ค่าละ 1 วินาที = 10 นาที)
+const SB_MIN_SAMPLES = 30;   // ต้องมีอย่างน้อย 30 ค่า (30 วินาที) ถึงมีระดับปกติ
+const SB_HOLD_TICKS = 2;     // ต้องต่างจากปกติต่อเนื่อง ~0.5 วินาทีถึงนับเป็นเหตุการณ์
+const SB_CLEAR_TICKS = 8;    // กลับมาใกล้ปกติต่อเนื่อง ~2 วินาที ถึงปิดเหตุการณ์
+const SB_HYST_DB = 2;        // กันเหตุการณ์กะพริบที่ขอบเกณฑ์
+const SB_TIMELINE_MS = 300_000;
+const SB_TICKS_PER_SAMPLE = Math.round(1000 / SAMPLE_MS);
+
+const sb = { enabled:true, session:false, live:false, seed:null,
+samples:[], acc:[], baseline:null, current:0,
+hold:0, holdDir:0, calm:0, saveCount:0,
+event:null, events:[], timeline:[] };
+
+/* mic.rms (0–1) → ระดับเสียงสัมพัทธ์ 0–90 หน่วย (1 หน่วย ≈ 1 dB) */
+const sbLevel = (rms) => Math.max(0, 20 * Math.log10(Math.max(rms, 1e-5)) + 90);
+const sbMedian = (arr) => {
+const a = [...arr].sort((x, y) => x - y);
+const n = a.length;
+return n ? (n % 2 ? a[n >> 1] : (a[n / 2 - 1] + a[n / 2]) / 2) : 0;
+};
+
+function sbSave() {
+save(K.sb, JSON.stringify({ on: sb.enabled, base: Number.isFinite(sb.seed) ? sb.seed : null }));
+}
+
+function sbBegin() {
+sb.session = true;
+/* ถ้าเคยเรียนรู้ไว้ ใช้ค่าเดิมเป็นจุดเริ่ม แล้วถูกแทนที่ด้วยค่าจริงภายใน ~1 นาที */
+sb.samples = Number.isFinite(sb.seed) ? Array(SB_MIN_SAMPLES).fill(sb.seed) : [];
+sb.baseline = sb.samples.length ? sb.seed : null;
+sb.acc.length = 0; sb.timeline.length = 0;
+sb.event = null; sb.hold = 0; sb.holdDir = 0; sb.calm = 0; sb.saveCount = 0;
+}
+
+function sbCloseEvent(end = Date.now()) {
+const e = sb.event;
+sb.hold = 0; sb.holdDir = 0; sb.calm = 0;
+if (!e) return;
+e.dur = Math.max(1, Math.round((end - e.t0) / 1000));
+sb.events.unshift(e);
+if (sb.events.length > 20) sb.events.pop();
+sb.event = null;
+}
+
+function sbEnd() {
+sbCloseEvent();
+sbSave();
+sb.session = false; sb.live = false;
+sb.acc.length = 0;
+}
+
+/* เรียกทุก SAMPLE_MS (250ms) จากลูปหลัก */
+function sbTick() {
+if (!sb.enabled || !mic.on) { if (sb.session) sbEnd(); return; }
+if (!sb.session) sbBegin();
+
+/* ไม่เรียนรู้ตอนกำลังวัดเสียงรอบข้าง / ซ่อนหน้าจอ / ไมค์ไม่ได้ทำงาน */
+sb.live = !mic.calibrating && !document.hidden && mic.ctx?.state === 'running';
+if (!sb.live) { sbCloseEvent(); sb.acc.length = 0; return; }
+
+const cur = sbLevel(mic.rms);
+sb.current = cur;
+sb.acc.push(cur);
+
+if (sb.acc.length >= SB_TICKS_PER_SAMPLE) { // ทุก 1 วินาที เก็บ 1 ค่า (มัธยฐานของ 4 ค่า)
+const s = sbMedian(sb.acc);
+sb.acc.length = 0;
+sb.samples.push(s);
+if (sb.samples.length > SB_WINDOW) sb.samples.shift();
+if (sb.samples.length >= SB_MIN_SAMPLES) {
+sb.baseline = sbMedian(sb.samples); // ระดับปกติ = มัธยฐานของ 10 นาทีล่าสุด ทนต่อเสียงผิดปกติชั่วคราว
+sb.seed = sb.baseline;
+}
+const now = Date.now();
+sb.timeline.push({ t: now, cur: s, base: sb.baseline, flag: !!sb.event });
+while (sb.timeline.length && now - sb.timeline[0].t > SB_TIMELINE_MS) sb.timeline.shift();
+if (++sb.saveCount >= 30) { sb.saveCount = 0; sbSave(); }
+}
+
+if (sb.baseline == null) return; // ยังเรียนรู้อยู่
+
+const dev = cur - sb.baseline;
+const thr = SB_DEV[settings().sensitivity] ?? SB_DEV.medium;
+const thrDown = thr * SB_DOWN_FACTOR;
+const canDown = sb.baseline >= SB_MIN_AMBIENT;
+const dir = dev >= thr ? 1 : (canDown && dev <= -thrDown) ? -1 : 0;
+
+if (!sb.event) {
+if (dir === 0 || dir !== sb.holdDir) { sb.hold = dir ? 1 : 0; sb.holdDir = dir; }
+else sb.hold++;
+if (sb.hold >= SB_HOLD_TICKS) {
+sb.event = { t0: Date.now() - (SB_HOLD_TICKS - 1) * SAMPLE_MS, dir, peak: dev, dur: 0 };
+sb.calm = 0;
+}
+} else {
+const e = sb.event;
+e.peak = e.dir === 1 ? Math.max(e.peak, dev) : Math.min(e.peak, dev);
+const still = e.dir === 1 ? dev >= thr - SB_HYST_DB : dev <= -(thrDown - SB_HYST_DB);
+sb.calm = still ? 0 : sb.calm + 1;
+if (sb.calm >= SB_CLEAR_TICKS) sbCloseEvent(Date.now() - sb.calm * SAMPLE_MS);
+}
+}
+/* SB-CORE-END */
+
+function sbReset() {
+sb.seed = null; sb.baseline = null; sb.current = 0;
+sb.samples.length = 0; sb.acc.length = 0; sb.timeline.length = 0;
+sb.events.length = 0; sb.event = null;
+sb.hold = 0; sb.holdDir = 0; sb.calm = 0; sb.saveCount = 0;
+sbSave();
+renderSb();
+drawSb();
+}
+
+function loadSb() {
+let d = null;
+try { d = JSON.parse(read(K.sb)); } catch {}
+if (d) {
+sb.enabled = d.on !== false;
+sb.seed = Number.isFinite(d.base) ? d.base : null;
+}
+$('sbSwitch').checked = sb.enabled;
+}
+
+const sbSigned = (v) => (v >= 0 ? '+' : '−') + Math.abs(Math.round(v));
+
+function sbEventText(e, ongoing) {
+const n = Math.abs(Math.round(e.peak));
+const what = e.dir === 1 ? 'ดังกว่าปกติ' : 'เงียบกว่าปกติ';
+const secs = ongoing ? Math.max(1, Math.round((Date.now() - e.t0) / 1000)) : e.dur;
+return `เสียง${what} ${e.dir === 1 ? '+' : '−'}${n} dB นาน ${secs} วินาที${ongoing ? ' (กำลังเกิดอยู่)' : ''}`;
+}
+
+function renderSb() {
+const sens = settings().sensitivity;
+const thr = SB_DEV[sens] ?? SB_DEV.medium;
+const learned = sb.baseline != null;
+
+let status = '', unusual = false;
+if (!sb.enabled) status = 'โหมดพื้นฐานเสียงปิดอยู่';
+else if (!mic.on) status = 'เปิดไมโครโฟนเพื่อเริ่มเรียนรู้เสียงปกติ';
+else if (mic.calibrating) status = 'กำลังวัดเสียงรอบข้าง — หยุดเรียนรู้ชั่วคราว';
+else if (!sb.live) status = 'หยุดชั่วคราว';
+else if (!learned) status = `กำลังเรียนรู้เสียงปกติ… ${sb.samples.length}/${SB_MIN_SAMPLES} วินาที`;
+else if (sb.event) { status = 'ตรวจพบเสียงผิดจากปกติ'; unusual = true; }
+else status = 'เสียงอยู่ในระดับปกติ';
+
+const st = $('sbStatus');
+st.textContent = status;
+st.classList.toggle('unusual', unusual);
+
+const showNow = sb.session && sb.live;
+$('sbCur').textContent = showNow ? Math.round(sb.current) : '--';
+$('sbBase').textContent = learned ? Math.round(sb.baseline) : '--';
+$('sbDev').textContent = (showNow && learned) ? sbSigned(sb.current - sb.baseline) : '--';
+
+const names = { low:'ต่ำ', medium:'ปานกลาง', high:'สูง' };
+$('sbSens').textContent =
+`ความอ่อนไหว: ${names[sens]} — ถือว่าผิดจากปกติเมื่อดังกว่าปกติอย่างน้อย ${thr} dB หรือเงียบกว่าปกติอย่างน้อย ${Math.round(thr * SB_DOWN_FACTOR)} dB`;
+
+/* บรรทัดสั้น ๆ บนหน้าแรก */
+$('sbLine').textContent =
+(sb.enabled && sb.session && sb.live)
+? (!learned ? 'กำลังเรียนรู้เสียงปกติ…' : `เสียงเทียบกับปกติ: ${sb.event ? 'ผิดจากปกติ' : 'ปกติ'}`)
+: '';
+
+$('flag4').innerHTML = (sb.enabled && sb.session) ? '&#10003;' : '&#10007;';
+
+/* รายการเหตุการณ์ */
+const rows = [];
+const add = (e, ongoing) => {
+const d = document.createElement('div');
+d.textContent = `${new Date(e.t0).toTimeString().slice(0, 8)} · ${sbEventText(e, ongoing)}`;
+rows.push(d);
+};
+if (sb.event) add(sb.event, true);
+for (const e of sb.events.slice(0, 8)) add(e, false);
+if (!rows.length) {
+const d = document.createElement('div');
+d.className = 'interim';
+d.textContent = 'ยังไม่พบเสียงผิดจากปกติ';
+rows.push(d);
+}
+$('sbEvents').replaceChildren(...rows);
+}
+
+const sbCv = $('sbGraph');
+const sg = sbCv.getContext('2d');
+let sw = 0, sh = 0;
+new ResizeObserver(() => {
+const dpr = Math.min(window.devicePixelRatio || 1, 2);
+sw = sbCv.clientWidth;
+sh = sbCv.clientHeight;
+sbCv.width = Math.round(sw * dpr);
+sbCv.height = Math.round(sh * dpr);
+sg.setTransform(dpr, 0, 0, dpr, 0, 0);
+drawSb();
+}).observe(sbCv);
+
+function drawSb() {
+if (!sw || !sh) return;
+const now = Date.now();
+const thr = SB_DEV[settings().sensitivity] ?? SB_DEV.medium;
+const pts = sb.timeline;
+
+sg.clearRect(0, 0, sw, sh);
+const pad = 8, H = sh - pad * 2;
+
+sg.strokeStyle = cssVar('--grid');
+sg.lineWidth = 1;
+for (const f of [0.25, 0.5, 0.75]) {
+const y = pad + H * f + .5;
+sg.beginPath(); sg.moveTo(0, y); sg.lineTo(sw, y); sg.stroke();
+}
+if (pts.length < 2) return;
+
+const vals = [];
+for (const p of pts) { vals.push(p.cur); if (p.base != null) vals.push(p.base, p.base + thr); }
+let lo = Math.min(...vals) - 4, hi = Math.max(...vals) + 4;
+if (hi - lo < 24) { const m = (hi + lo) / 2; lo = m - 12; hi = m + 12; }
+const yOf = (v) => pad + H - ((v - lo) / (hi - lo)) * H;
+const xOf = (t) => sw - ((now - t) / SB_TIMELINE_MS) * sw;
+
+/* ช่วงที่เป็นเหตุการณ์ผิดจากปกติ */
+sg.fillStyle = 'rgba(196,85,61,.16)';
+pts.forEach((p, i) => {
+if (!p.flag) return;
+const x0 = xOf(i ? pts[i - 1].t : p.t - 1000), x1 = xOf(p.t);
+sg.fillRect(x0, pad, Math.max(2, x1 - x0), H);
+});
+
+const line = (get, color, width, dash) => {
+sg.save();
+sg.setLineDash(dash || []);
+sg.strokeStyle = color; sg.lineWidth = width; sg.lineJoin = sg.lineCap = 'round';
+sg.beginPath();
+let started = false;
+for (const p of pts) {
+const v = get(p);
+if (v == null) continue;
+const x = xOf(p.t), y = yOf(v);
+started ? sg.lineTo(x, y) : sg.moveTo(x, y);
+started = true;
+}
+sg.stroke();
+sg.restore();
+};
+line(p => p.base == null ? null : p.base + thr, cssVar('--hot'), 1.5, [5, 5]); // เส้นที่เริ่มนับว่าผิดปกติ
+line(p => p.base, cssVar('--muted'), 2, [2, 4]);                              // ระดับปกติ
+line(p => p.cur, cssVar('--calm'), 2.5);                                      // ตอนนี้
+}
+
+/* สแกนคำที่สื่ออารมณ์ (ใช้ร่วมกันทั้งข้อความที่พิมพ์และคำพูดที่ถอดได้) */
+function lexScan(text) {
+/* ตัด "ทุกที่" (everywhere) และคำที่ถูกปฏิเสธ ก่อนจับคำ */
+let low = text.toLowerCase().replaceAll('ทุกที่', ' ').replace(NEGATED, ' ');
+let hits = 0, pts = 0;
+for (const [term, w] of TERMS) {
+const n = low.split(term).length - 1;
+if (n) { pts += w * n; hits += n; low = low.replaceAll(term, ' '); }
+}
+return { hits, pts };
+}
+
+/* ══════════════════════════════════════════════════
+ถอดเสียงเป็นข้อความ
+══════════════════════════════════════════════════ */
+const sttLang = () => document.querySelector('input[name="sttlang"]:checked')?.value ?? 'th-TH';
+
+/* คำพูดที่นับคะแนน: ย้อนหลัง 30 วินาที หลังช่วงพักล่าสุด */
+function speechText() {
+const now = Date.now();
+const done = stt.finals
+.filter(f => f.t >= stt.ignoreBefore && now - f.t < STT_WINDOW)
+.map(f => f.text);
+return [...done, stt.interim].filter(Boolean).join(' ');
+}
+
+/* คำพูดล่าสุด ใช้แสดงในหน้าเตือน/ทบทวนเมื่อไม่ได้พิมพ์อะไร */
+function lastHeard() {
+return [...stt.finals.slice(-3).map(f => f.text), stt.interim].filter(Boolean).join(' ');
+}
+
+function renderStt() {
+const box = $('sttText');
+const rows = stt.finals.map(f => {
+const d = document.createElement('div');
+d.textContent = f.text;
+return d;
+});
+if (stt.interim) {
+const d = document.createElement('div');
+d.className = 'interim';
+d.textContent = stt.interim;
+rows.push(d);
+}
+if (!rows.length) {
+const d = document.createElement('div');
+d.className = 'interim';
+d.textContent = !SR ? 'Safari รุ่นนี้ยังไม่รองรับการถอดเสียง'
+: stt.on ? 'กำลังฟัง… ลองพูดอะไรสักอย่าง'
+: 'ปิดอยู่ — กดปุ่มด้านล่างเพื่อให้ Pause ถอดเสียงพูดเป็นข้อความ';
+rows.push(d);
+}
+box.replaceChildren(...rows);
+box.scrollTop = box.scrollHeight;
+}
+
+function syncSttUI() {
+const on = stt.on;
+const btn = $('btnStt');
+btn.textContent = on ? 'หยุดถอดเสียง' : 'เปิดถอดเสียงเป็นข้อความ';
+btn.className = on ? 'danger' : 'primary';
+$('sttState').textContent = !SR ? 'ไม่รองรับ' : on ? 'กำลังฟัง' : 'ปิดอยู่';
+$('flag3').innerHTML = on ? '&#10003;' : '&#10007;';
+}
+
+function startStt(clear = true) {
+if (!SR) { toast('Safari รุ่นนี้ยังไม่รองรับการถอดเสียง'); return; }
+if (!secure()) { toast('ถอดเสียงต้องเปิดหน้านี้ผ่าน https'); return; }
+if (stt.want) return;
+
+if (clear) { stt.finals.length = 0; stt.interim = ''; stt.ignoreBefore = 0; }
+stt.want = true; stt.on = true; stt.restarts.length = 0;
+$('sttNote').textContent = 'ใช้บริการรู้จำเสียงของ Safari/Apple เสียงอาจถูกส่งออกจากเครื่องไปแปลงเป็นข้อความ ต้องเปิด Dictation ไว้ที่ ตั้งค่า › ทั่วไป › แป้นพิมพ์';
+
+const rec = new SR();
+rec.lang = sttLang();
+rec.continuous = true;
+rec.interimResults = true;
+rec.maxAlternatives = 1;
+
+rec.onresult = (e) => {
+let interim = '';
+for (let i = e.resultIndex; i < e.results.length; i++) {
+const r = e.results[i];
+const txt = (r[0]?.transcript ?? '').trim();
+if (!txt) continue;
+if (r.isFinal) {
+stt.finals.push({ t: Date.now(), text: txt });
+if (stt.finals.length > 12) stt.finals.shift();
+} else interim += txt + ' ';
+}
+stt.interim = interim.trim();
+renderStt();
+render(); // ให้คำพูดเข้าสู่คะแนนทันที
+};
+
+rec.onerror = (e) => {
+const code = e.error;
+if (code === 'no-speech' || code === 'aborted') return; // ปกติ ปล่อยให้ onend เริ่มใหม่
+const msgs = {
+'not-allowed': 'ยังไม่ได้อนุญาตไมโครโฟน/การรู้จำเสียง — ตั้งค่า › Safari',
+'service-not-allowed': 'ต้องเปิด Dictation ที่ ตั้งค่า › ทั่วไป › แป้นพิมพ์',
+'audio-capture': 'ไมค์ใช้ไม่ได้ตอนนี้ ลองปิดไมโครโฟนวัดความดังก่อน แล้วเปิดถอดเสียงใหม่',
+'network': 'ถอดเสียงต้องต่ออินเทอร์เน็ต',
+'language-not-supported': 'ภาษานี้ยังใช้ถอดเสียงไม่ได้ในเครื่องนี้'
+};
+const msg = msgs[code] ?? `ถอดเสียงมีปัญหา (${code})`;
+stopStt();
+toast(msg);
+$('sttNote').textContent = msg;
+};
+
+rec.onend = () => {
+if (stt.rec !== rec) return; // instance เก่าที่ถูกปิดไปแล้ว
+stt.interim = '';
+renderStt();
+if (!stt.want) return;
+
+/* Safari จะตัดเซสชันเองเมื่อเงียบ จึงเริ่มใหม่ แต่กันวนถี่ผิดปกติ */
+const now = Date.now();
+stt.restarts = stt.restarts.filter(t => now - t < 20_000);
+stt.restarts.push(now);
+if (stt.restarts.length > 8) { stopStt(); toast('ถอดเสียงหยุดเอง — กดเปิดใหม่อีกครั้ง'); return; }
+
+setTimeout(() => {
+if (!stt.want || stt.rec !== rec) return;
+try { rec.start(); }
+catch { stopStt(); toast('ถอดเสียงหยุดเอง — กดเปิดใหม่อีกครั้ง'); }
+}, 300);
+};
+
+stt.rec = rec;
+try { rec.start(); }
+catch { stopStt(); toast('เริ่มถอดเสียงไม่สำเร็จ'); return; }
+
+syncSttUI();
+renderStt();
+}
+
+function stopStt() {
+stt.want = false; stt.on = false;
+const rec = stt.rec;
+stt.rec = null; stt.interim = '';
+try { rec?.abort(); } catch {}
+syncSttUI();
+renderStt();
+render();
+}
+
+/* ตรวจค่าเกณฑ์เตือน: คืนข้อความผิดพลาด หรือ null ถ้าใช้ได้ */
+function thresholdError(t) {
+if (!t || typeof t !== 'object') return 'ค่าไม่ถูกต้อง';
+for (const k of ['low', 'medium', 'high']) {
+if (!Number.isInteger(t[k]) || t[k] < TH_MIN || t[k] > TH_MAX) {
+return `ค่าต้องเป็นจำนวนเต็มระหว่าง ${TH_MIN}–${TH_MAX}`;
+}
+}
+if (!(t.low > t.medium && t.medium > t.high)) return 'ต้องเรียงจาก ต่ำ > ปานกลาง > สูง';
+return null;
+}
+
+function syncThresholdUI() {
+$('thLow').value = THRESHOLD.low;
+$('thMedium').value = THRESHOLD.medium;
+$('thHigh').value = THRESHOLD.high;
+}
+
+function applyThresholdInputs() {
+const next = {
+low: Math.round(Number($('thLow').value)),
+medium: Math.round(Number($('thMedium').value)),
+high: Math.round(Number($('thHigh').value))
+};
+const err = thresholdError(next);
+if (err) { toast(err); syncThresholdUI(); return; } // ค่าไม่ผ่าน: คืนค่าเดิม
+Object.assign(THRESHOLD, next);
+syncThresholdUI();
+saveSettings();
+}
+
+function settings() {
+return {
+pauseOn: $('pauseSwitch').checked,
+trigger: document.querySelector('input[name="trigger"]:checked').value,
+sensitivity: document.querySelector('input[name="sensitivity"]:checked').value
+};
+}
+
+function analyze() {
+const signals = [];
+const cfg = settings();
+const useText = cfg.trigger !== 'voice';
+const useVoice = cfg.trigger !== 'typing';
+const text = $('draft').value;
+let textRaw = 0, voiceRaw = 0, speechRaw = 0;
+
+if (useText) {
+const { hits, pts } = lexScan(text);
+const wr = Math.min(1, pts / 9);
+textRaw += wr * W.words;
+if (hits) signals.push({ label:`คำที่สื่ออารมณ์ ${hits} คำ`, on: wr > 0.18 });
+
+const letters = text.replace(/[^A-Za-z]/g, '');
+const caps = letters.length >= 8 ? (text.match(/[A-Z]/g) ?? []).length / letters.length : 0;
+const capsScore = caps > 0.5 ? Math.min(1, (caps - 0.5) / 0.35) : 0;
+textRaw += capsScore * W.caps;
+if (capsScore > 0) signals.push({ label:'ตัวพิมพ์ใหญ่รัว', on:true });
+
+const punct = (text.match(/[!?！？]{2,}/g) ?? []).length;
+textRaw += Math.min(1, punct / 2) * W.punct;
+if (punct) signals.push({ label:'เครื่องหมายซ้ำ', on:true });
+
+const stretch = (text.match(/(.)\1{3,}/g) ?? []).length;
+textRaw += Math.min(1, stretch / 2) * W.stretch;
+if (stretch) signals.push({ label:'ลากตัวอักษร', on:true });
+
+let cpm = 0;
+if (typing.stamps.length >= 8) {
+const span = (typing.stamps.at(-1) - typing.stamps[0]) / 60_000;
+if (span >= 3 / 60) cpm = typing.stamps.length / span; // ต้องมีช่วงเวลาอย่างน้อย 3 วินาที
+}
+const sp = cpm > 320 ? Math.min(1, (cpm - 320) / 260) : 0;
+textRaw += sp * W.speed;
+if (cpm) signals.push({ label:`พิมพ์ ${Math.round(cpm)} ตัว/นาที`, on: sp > 0.15 });
+
+const er = typing.erases.length;
+const es = er > 6 ? Math.min(1, (er - 6) / 16) : 0;
+textRaw += es * W.erase;
+if (er > 3) signals.push({ label:`ลบแล้วพิมพ์ใหม่ ${er} ครั้ง`, on: es > 0.1 });
+
+if (text.trim().length < 12) textRaw = Math.min(textRaw, 25);
+}
+
+if (useVoice && mic.on && !mic.calibrating) {
+const loud = mic.rel > 0.3 ? Math.min(1, (mic.rel - 0.3) / 0.5) : 0;
+voiceRaw += loud * W.loud;
+
+const hi = mic.history.reduce((n, p) => n + (p.v > 0.38 ? 1 : 0), 0);
+const ratio = mic.history.length > 25 ? hi / mic.history.length : 0;
+const sus = ratio > 0.25 ? Math.min(1, (ratio - 0.25) / 0.4) : 0;
+voiceRaw += sus * W.sustain;
+
+const bursts = mic.bursts.length;
+const bs = bursts > 2 ? Math.min(1, (bursts - 2) / 6) : 0;
+voiceRaw += bs * W.burst;
+
+if (mic.rel > 0.12 || sus > 0 || bursts) {
+signals.push({ kind:'voice', label:`ความดัง ${Math.round(mic.rel * 100)}%`, on: loud > 0.15 });
+}
+if (ratio > 0.05) {
+signals.push({ kind:'voice', label:`เสียงสูงต่อเนื่อง ${Math.round(ratio * 100)}%`, on: sus > 0.15 });
+}
+if (bursts) signals.push({ kind:'voice', label:`เสียงพุ่ง ${bursts} ครั้ง`, on: bs > 0.15 });
+}
+
+/* คำพูดที่ถอดเป็นข้อความ: นับเฉพาะเมื่อเปิดถอดเสียง และโหมดเตือนรวม "ตอนพูด" */
+if (useVoice && stt.on) {
+const heard = speechText();
+if (heard) {
+const { hits, pts } = lexScan(heard);
+const sr = Math.min(1, pts / 9);
+speechRaw += sr * W.speech;
+if (hits) signals.push({ kind:'speech', label:`คำพูดที่สื่ออารมณ์ ${hits} คำ`, on: sr > 0.18 });
+}
+}
+
+/* normalize แต่ละฝั่งเป็น 0–100 แล้วรวม เพื่อให้เสียงล้วนก็ถึงเกณฑ์ได้ */
+const t = textRaw / TEXT_MAX * 100;
+const v = voiceRaw / VOICE_MAX * 100;
+const sp = speechRaw / W.speech * 100;
+const top = Math.max(t, v, sp);
+const score = top + 0.25 * (t + v + sp - top); /* ถ้า sp = 0 จะเท่ากับสูตรเดิม max + 0.25·min */
+
+return { score: Math.max(0, Math.min(100, Math.round(score))), signals };
+}
+
+/* ══════════════════════════════════════════════════
+กราฟ
+══════════════════════════════════════════════════ */
+const cv = $('graph');
+const g = cv.getContext('2d');
+let gw = 0, gh = 0;
+
+const ro = new ResizeObserver(() => {
+const dpr = Math.min(window.devicePixelRatio || 1, 2);
+gw = cv.clientWidth;
+gh = cv.clientHeight;
+cv.width = Math.round(gw * dpr);
+cv.height = Math.round(gh * dpr);
+g.setTransform(dpr, 0, 0, dpr, 0, 0);
+drawGraph();
+});
+ro.observe(cv);
+
+function cssVar(name) {
+return getComputedStyle(document.body).getPropertyValue(name).trim();
+}
+
+function drawGraph() {
+if (!gw || !gh) return;
+const now = performance.now();
+const limit = THRESHOLD[settings().sensitivity];
+
+g.clearRect(0, 0, gw, gh);
+
+const pad = 8;
+const H = gh - pad * 2;
+const yOf = (v) => pad + H - (v / 100) * H;
+
+g.strokeStyle = cssVar('--grid');
+g.lineWidth = 1;
+for (const v of [25, 50, 75]) {
+g.beginPath();
+g.moveTo(0, yOf(v) + .5);
+g.lineTo(gw, yOf(v) + .5);
+g.stroke();
+}
+
+g.save();
+g.setLineDash([5, 5]);
+g.strokeStyle = cssVar('--hot');
+g.globalAlpha = .55;
+g.beginPath();
+g.moveTo(0, yOf(limit) + .5);
+g.lineTo(gw, yOf(limit) + .5);
+g.stroke();
+g.restore();
+
+if (series.length < 2) return;
+
+const xOf = (t) => gw - ((now - t) / GRAPH_MS) * gw;
+
+g.beginPath();
+g.moveTo(xOf(series[0].t), yOf(0));
+for (const p of series) g.lineTo(xOf(p.t), yOf(p.score));
+g.lineTo(xOf(series.at(-1).t), yOf(0));
+g.closePath();
+const grad = g.createLinearGradient(0, pad, 0, gh);
+grad.addColorStop(0, 'rgba(196,85,61,.28)');
+grad.addColorStop(1, 'rgba(196,85,61,0)');
+g.fillStyle = grad;
+g.fill();
+
+g.beginPath();
+series.forEach((p, i) => {
+const x = xOf(p.t), y = yOf(p.voice);
+i ? g.lineTo(x, y) : g.moveTo(x, y);
+});
+g.strokeStyle = cssVar('--calm');
+g.lineWidth = 2;
+g.lineJoin = g.lineCap = 'round';
+g.globalAlpha = .85;
+g.stroke();
+g.globalAlpha = 1;
+
+g.beginPath();
+series.forEach((p, i) => {
+const x = xOf(p.t), y = yOf(p.score);
+i ? g.lineTo(x, y) : g.moveTo(x, y);
+});
+g.strokeStyle = cssVar('--hot');
+g.lineWidth = 2.5;
+g.stroke();
+
+const last = series.at(-1);
+g.beginPath();
+g.arc(xOf(last.t), yOf(last.score), 4, 0, Math.PI * 2);
+g.fillStyle = cssVar('--hot');
+g.fill();
+g.strokeStyle = cssVar('--soft');
+g.lineWidth = 2;
+g.stroke();
+}
+
+function pushSample() {
+const now = performance.now();
+series.push({ t:now, score:current.score, voice: mic.on ? mic.rel * 100 : 0 });
+while (series.length && now - series[0].t > GRAPH_MS) series.shift();
+
+const peak = series.reduce((m, p) => Math.max(m, p.score), 0);
+$('peakVal').textContent = Math.round(peak);
+}
+
+/* ══════════════════════════════════════════════════
+แสดงผล
+══════════════════════════════════════════════════ */
+function render() {
+current = analyze();
+const s = current.score;
+const limit = THRESHOLD[settings().sensitivity];
+
+$('scoreNum').textContent = s;
+$('stateText').textContent =
+s < 20 ? 'ใจเย็นดี' : s < 40 ? 'เริ่มมีอารมณ์' :
+s < 60 ? 'ค่อนข้างร้อน' : s < 80 ? 'ร้อนมาก' : 'แรงมาก';
+
+const fill = $('meterFill');
+fill.style.width = `${s}%`;
+fill.style.background = s < 35 ? 'var(--calm)' : s < 60 ? 'var(--warm)' : 'var(--hot)';
+
+$('meterMark').style.left = `${limit}%`;
+$('limitText').textContent = `เตือนที่ ${limit}`;
+
+const box = $('chips');
+box.replaceChildren(...current.signals.map(sig => {
+const el = document.createElement('span');
+el.className = sig.on ? 'chip on' : 'chip';
+el.textContent = sig.label;
+return el;
+}));
+
+maybeTrigger();
+}
+
+/* ══════════════════════════════════════════════════
+เงื่อนไขการเตือน
+══════════════════════════════════════════════════ */
+function maybeTrigger() {
+if (!settings().pauseOn) return;
+if (Date.now() < snoozeUntil) return;
+if ($('homeScreen').classList.contains('hidden')) return;
+if (mic.calibrating) return;
+
+const limit = THRESHOLD[settings().sensitivity];
+const gap = Math.min(18, Math.round(limit * 0.4)); // เกณฑ์ต่ำ ๆ ต้องปลดล็อกได้จริง
+if (!armed && current.score < limit - gap) armed = true;
+if (!armed || current.score < limit) return;
+
+armed = false;
+openPrompt();
+}
+
+function openPrompt() {
+const on = current.signals.filter(s => s.on);
+const voiceLed = on.some(s => s.kind === 'voice' || s.kind === 'speech');
+
+$('promptTitle').textContent = voiceLed
+? 'เสียงเริ่มดังขึ้นนะ อยากพักก่อนไหม?'
+: 'ข้อความนี้ดูแรงอยู่นิดนึง อยากพักก่อนไหม?';
+
+$('promptWhy').textContent = on.length
+? `สังเกตจาก: ${on.map(s => s.label).join(' · ')}`
+: 'สังเกตจากจังหวะของคุณตอนนี้';
+
+const q = $('draft').value.trim() || lastHeard();
+$('promptQuote').textContent = q
+? q.slice(0, 400)
+: `ระดับความรู้สึกที่วัดได้ตอนนี้: ${current.score} จาก 100`;
+
+showScreen('promptScreen');
+}
+
+/* ══════════════════════════════════════════════════
+หน้าจอ
+══════════════════════════════════════════════════ */
+function showScreen(id) {
+for (const c of document.querySelectorAll('.card')) {
+c.classList.toggle('hidden', c.id !== id);
+}
+window.scrollTo({ top:0, behavior:'instant' });
+if (id === 'homeScreen') requestAnimationFrame(drawGraph);
+if (id === 'sbScreen') requestAnimationFrame(drawSb);
+}
+
+function backHome() {
+stopTimer();
+showScreen('homeScreen');
+renderStats();
+render();
+}
+
+/* ══════════════════════════════════════════════════
+Settings / Stats
+══════════════════════════════════════════════════ */
+function saveSettings() {
+save(K.set, JSON.stringify({ ...settings(), wake: $('wakeSwitch').checked, lang: sttLang(), thresholds: { ...THRESHOLD } }));
+if (stt.on && stt.rec && stt.rec.lang !== sttLang()) { stopStt(); startStt(false); }
+armed = true;
+if (!$('wakeSwitch').checked) releaseWakeLock();
+else if (mic.on) requestWakeLock();
+toast(settings().pauseOn ? 'บันทึกแล้ว' : 'ปิด Pause แล้ว');
+render();
+drawGraph();
+}
+
+function loadSettings() {
+const raw = read(K.set);
+if (!raw) return;
+let d; try { d = JSON.parse(raw); } catch { return; }
+if (!d) return;
+
+$('pauseSwitch').checked = !!d.pauseOn;
+if ('wake' in d) $('wakeSwitch').checked = !!d.wake;
+const t = document.querySelector(`input[name="trigger"][value="${d.trigger}"]`);
+if (t) t.checked = true;
+const s = document.querySelector(`input[name="sensitivity"][value="${d.sensitivity}"]`);
+if (s) s.checked = true;
+const l = document.querySelector(`input[name="sttlang"][value="${d.lang}"]`);
+if (l) l.checked = true;
+if (d.thresholds && !thresholdError(d.thresholds)) {
+Object.assign(THRESHOLD, { low:d.thresholds.low, medium:d.thresholds.medium, high:d.thresholds.high });
+}
+}
+
+const getStats = () => { try { return JSON.parse(read(K.stat)) ?? {}; } catch { return {}; } };
+
+function bump(k) {
+const s = getStats();
+s[k] = (s[k] ?? 0) + 1;
+save(K.stat, JSON.stringify(s));
+renderStats();
+}
+
+function renderStats() {
+const s = getStats();
+$('sPause').textContent = `${s.paused ?? 0} ครั้ง`;
+$('sReply').textContent = `${s.replied ?? 0} ครั้ง`;
+$('sEdit').textContent = `${s.changed ?? 0} ครั้ง`;
+$('sDiscard').textContent = `${s.discard ?? 0} ครั้ง`;
+$('statLine').textContent = s.paused ? `คุณเลือกที่จะพักมาแล้ว ${s.paused} ครั้ง` : '';
+}
+
+/* ══════════════════════════════════════════════════
+พัก / สะท้อนกลับ
+══════════════════════════════════════════════════ */
+let timerId = null, hintId = null;
+const stopTimer = () => { clearInterval(timerId); clearInterval(hintId); timerId = hintId = null; };
+
+function takePause() {
+bump('paused');
+showScreen('breathScreen');
+
+let left = DURATION[settings().sensitivity];
+const num = $('countdown'), hint = $('breathHint');
+num.textContent = left;
+
+stopTimer();
+timerId = setInterval(() => {
+left--;
+num.textContent = left > 0 ? left : '';
+if (left <= 0) { stopTimer(); num.innerHTML = '&#10003;'; hint.textContent = 'พร้อมแล้ว'; }
+}, 1000);
+
+let phase = 0;
+hint.textContent = 'หายใจเข้า…';
+hintId = setInterval(() => {
+phase ^= 1;
+hint.textContent = phase ? 'หายใจออก…' : 'หายใจเข้า…';
+}, 4000);
+
+mic.history.length = 0;
+mic.bursts.length = 0;
+stt.ignoreBefore = Date.now(); // คำที่พูดก่อนพัก ไม่นับซ้ำ
+stt.interim = '';
+}
+
+function goReflect() {
+stopTimer();
+const q = $('draft').value.trim() || lastHeard();
+$('reflectQuote').textContent = q
+? q.slice(0, 400)
+: 'ลองนึกดูว่าเมื่อกี้คุณกำลังจะพูดอะไร และมันจำเป็นต้องพูดด้วยน้ำเสียงนั้นไหม';
+showScreen('reflectScreen');
+}
+
+function reflectAnswer(kind) {
+if (kind === 'edit') {
+bump('changed');
+toast('ดีแล้ว ที่ให้เวลาตัวเองคิดอีกครั้ง');
+backHome();
+$('draft').focus();
+} else if (kind === 'discard') {
+bump('discard');
+clearDraft();
+toast('บางเรื่องไม่ต้องพูดก็ได้');
+backHome();
+} else {
+sendNow();
+}
+}
+
+/* ══════════════════════════════════════════════════
+ส่ง / ล้าง
+══════════════════════════════════════════════════ */
+function trySend() {
+const text = $('draft').value.trim();
+if (!text) { toast('ยังไม่มีข้อความ'); return; }
+
+const limit = THRESHOLD[settings().sensitivity];
+if (settings().pauseOn && current.score >= limit && Date.now() >= snoozeUntil) {
+openPrompt();
+return;
+}
+sendNow();
+}
+
+function sendNow() {
+const had = $('draft').value.trim();
+toast(had ? 'ส่งข้อความแล้ว (จำลอง)' : 'ไปต่อเลย');
+clearDraft();
+backHome();
+}
+
+/* ไม่ตั้ง armed=true ที่นี่ ให้ hysteresis ใน maybeTrigger เป็นคนปลดเอง */
+function clearDraft() {
+$('draft').value = '';
+typing.stamps.length = 0;
+typing.erases.length = 0;
+typing.lastLen = 0;
+render();
+}
+
+/* ══════════════════════════════════════════════════
+Event
+══════════════════════════════════════════════════ */
+$('micPill').addEventListener('click', toggleMic);
+$('micBig').addEventListener('click', toggleMic);
+$('micSwitch').addEventListener('change', (e) => {
+if (e.target.checked && !mic.on) startMic();
+else if (!e.target.checked && mic.on) { stopMic(); toast('ปิดไมโครโฟนแล้ว'); }
+});
+
+$('btnCal').addEventListener('click', calibrate);
+$('btnCal2').addEventListener('click', calibrate);
+$('btnSend').addEventListener('click', trySend);
+$('btnClear').addEventListener('click', clearDraft);
+$('btnSettings').addEventListener('click', () => showScreen('settingsScreen'));
+$('btnBack2').addEventListener('click', backHome);
+$('btnBack1').addEventListener('click', backHome);
+$('btnReady').addEventListener('click', goReflect);
+$('btnPause').addEventListener('click', takePause);
+$('btnGoOn').addEventListener('click', () => { bump('replied'); sendNow(); });
+$('btnSnooze').addEventListener('click', () => {
+snoozeUntil = Date.now() + 5 * 60_000;
+backHome();
+toast('พักการเตือน 5 นาที');
+});
+$('btnReset').addEventListener('click', () => {
+try { localStorage.removeItem(K.stat); } catch {}
+renderStats();
+toast('ล้างสถิติแล้ว');
+});
+
+$('btnSb').addEventListener('click', () => showScreen('sbScreen'));
+$('btnBack3').addEventListener('click', backHome);
+$('btnSbReset').addEventListener('click', () => { sbReset(); toast('ล้างแล้ว — เริ่มเรียนรู้เสียงปกติใหม่'); });
+$('sbSwitch').addEventListener('change', (e) => {
+sb.enabled = e.target.checked;
+sbSave();
+renderSb();
+});
+
+for (const id of ['thLow', 'thMedium', 'thHigh']) {
+$(id).addEventListener('change', applyThresholdInputs);
+}
+$('btnThReset').addEventListener('click', () => {
+Object.assign(THRESHOLD, DEFAULT_THRESHOLD);
+syncThresholdUI();
+saveSettings();
+});
+
+$('btnStt').addEventListener('click', () => {
+stt.suspended = false;
+if (stt.want) stopStt(); else startStt();
+});
+$('btnSttClear').addEventListener('click', () => {
+stt.finals.length = 0; stt.interim = '';
+renderStt();
+render();
+});
+
+for (const b of document.querySelectorAll('[data-reflect]')) {
+b.addEventListener('click', () => reflectAnswer(b.dataset.reflect));
+}
+
+for (const el of ['pauseSwitch', 'wakeSwitch']) {
+$(el).addEventListener('change', saveSettings);
+}
+for (const el of document.querySelectorAll('input[name="trigger"], input[name="sensitivity"], input[name="sttlang"]')) {
+el.addEventListener('change', saveSettings);
+}
+
+const draft = $('draft');
+draft.addEventListener('input', (e) => {
+const now = Date.now();
+const len = draft.value.length;
+
+if (e.inputType?.startsWith('delete')) {
+/* นับเป็นการลบ 1 ครั้งต่อช่วง ไม่นับตอนกดค้างรัว ๆ */
+if (!typing.erases.length || now - typing.erases.at(-1) > 400) {
+typing.erases.push(now);
+if (typing.erases.length > 40) typing.erases.shift();
+}
+} else if (len > typing.lastLen) {
+typing.stamps.push(now);
+if (typing.stamps.length > 60) typing.stamps.shift();
+}
+typing.lastLen = len;
+render();
+});
+
+/* ลูปหลัก: เก็บตัวอย่าง วาดกราฟ และทำให้ค่าเก่าเย็นลงเอง */
+setInterval(() => {
+const now = Date.now();
+while (typing.stamps.length && now - typing.stamps[0] > 12_000) typing.stamps.shift();
+while (typing.erases.length && now - typing.erases[0] > 12_000) typing.erases.shift();
+render();
+pushSample();
+sbTick();
+renderSb();
+if (!$('homeScreen').classList.contains('hidden')) drawGraph();
+if (!$('sbScreen').classList.contains('hidden')) drawSb();
+}, SAMPLE_MS);
+
+/* สลับแอปแล้วหยุดอ่านเสียง ประหยัดแบต */
+document.addEventListener('visibilitychange', async () => {
+if (!mic.on || !mic.ctx) return;
+if (document.hidden) {
+await mic.ctx.suspend().catch(() => {});
+cancelAnimationFrame(mic.raf);
+releaseWakeLock();
+} else {
+await mic.ctx.resume().catch(() => {});
+loopMic();
+requestWakeLock();
+}
+});
+
+/* สลับแอป: หยุดถอดเสียงชั่วคราว แล้วเริ่มใหม่เมื่อกลับมา */
+document.addEventListener('visibilitychange', () => {
+if (document.hidden && stt.want) { stt.suspended = true; stopStt(); }
+else if (!document.hidden && stt.suspended) { stt.suspended = false; startStt(false); }
+});
+
+window.addEventListener('pagehide', () => { sbEnd(); stopMic(); stopStt(); });
+
+/* ══════════════════════════════════════════════════
+เริ่มทำงาน
+══════════════════════════════════════════════════ */
+if (!ready()) {
+$('httpsWarn').classList.remove('hidden');
+$('micBig').textContent = 'ใช้ไมโครโฟนไม่ได้ในหน้านี้';
+$('micBig').disabled = true;
+$('micPill').disabled = true;
+$('micSwitch').disabled = true;
+$('micNote').textContent = 'ใช้ไม่ได้ — ต้องเปิดผ่าน https';
+}
+
+loadSettings();
+
+const b = read(K.base);
+if (b !== null) {
+mic.baseline = parseFloat(b);
+$('baseVal').textContent = (mic.baseline * 1000).toFixed(1);
+}
+
+if (!SR || !secure()) {
+$('btnStt').disabled = true;
+$('sttNote').textContent = !SR ? 'Safari รุ่นนี้ยังไม่รองรับการถอดเสียง'
+: 'ถอดเสียงต้องเปิดหน้านี้ผ่าน https';
+}
+
+loadSb();
+syncThresholdUI();
+syncMicUI();
+syncSttUI();
+renderStt();
+renderStats();
+render();
+renderSb();
+</script>
+
+</body>
+</html>
